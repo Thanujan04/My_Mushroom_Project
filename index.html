@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Mushroom Farm Ledger - Cloud Farm Manager</title>
+  <title>Mushroom Farm Ledger - Multi-User Shared Cloud</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts: Inter -->
@@ -13,7 +13,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Firebase Modular SDKs with Multi-Device Cloud Sync -->
+  <!-- Firebase Modular SDKs with Shared Farm Collection -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { 
@@ -96,10 +96,11 @@
         userBadge.classList.remove('hidden');
         userBadge.classList.add('flex');
         userEmailText.textContent = user.email;
-        cloudStatusText.textContent = "Synced";
+        cloudStatusText.textContent = "Shared Cloud";
         cloudDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
 
-        const localKey = 'farm_records_' + user.uid;
+        // Shared local cache key for shared farm records
+        const localKey = 'farm_records_shared_v1';
         const cached = localStorage.getItem(localKey);
         if (cached) {
           try {
@@ -110,8 +111,9 @@
           }
         }
 
-        const recordsRef = collection(db, 'users', user.uid, 'records');
-        const q = query(recordsRef, orderBy('date', 'desc'));
+        // Both accounts listen to this EXACT SAME shared collection
+        const sharedRecordsRef = collection(db, 'shared_farm_ledger', 'main_records', 'records');
+        const q = query(sharedRecordsRef, orderBy('date', 'desc'));
 
         if (unsubscribeFirestore) unsubscribeFirestore();
 
@@ -126,7 +128,7 @@
           window.updateDashboard();
         }, (err) => {
           console.error("Firestore sync error:", err);
-          window.showToast("Cloud sync permission error", "error");
+          window.showToast("Permission denied. Check Firestore security rules for this email.", "error");
         });
 
       } else {
@@ -166,7 +168,7 @@
       body { background: white !important; color: black !important; }
     }
     input, select, textarea {
-      font-size: 16px !important; /* Prevents auto zoom-in on iPhone/Android browsers */
+      font-size: 16px !important;
     }
     @media (min-width: 640px) {
       input, select, textarea { font-size: 14px !important; }
@@ -199,9 +201,9 @@
         <div>
           <h1 class="text-base sm:text-xl font-bold tracking-tight leading-tight flex items-center gap-1.5">
             Farm Ledger
-            <span class="text-[10px] bg-amber-500/20 text-amber-200 border border-amber-400/30 px-1.5 py-0.5 rounded-full font-medium">Cloud</span>
+            <span class="text-[10px] bg-amber-500/20 text-amber-200 border border-amber-400/30 px-1.5 py-0.5 rounded-full font-medium">Shared</span>
           </h1>
-          <p class="text-[11px] text-spore-200 hidden sm:block">Daily Sales & Crop Yield Sync</p>
+          <p class="text-[11px] text-spore-200 hidden sm:block">Multi-Account Cloud Ledger</p>
         </div>
       </div>
       
@@ -328,7 +330,7 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
 
-      <!-- Left Column: Forms (Sticky On Desktop, Modally Available On Mobile) -->
+      <!-- Left Column: Forms (Desktop Sidebar) -->
       <div id="desktopFormContainer" class="hidden lg:block lg:col-span-5 space-y-4 no-print">
         <div class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
           
@@ -408,7 +410,7 @@
 
             <button type="submit" id="saleSubmitBtn" class="w-full bg-emerald-700 hover:bg-emerald-800 active:scale-[0.99] text-white font-semibold py-3 rounded-xl shadow transition flex items-center justify-center gap-1.5 text-sm">
               <i data-lucide="cloud-upload" class="w-4 h-4"></i>
-              Sync Sale to Cloud
+              Sync to Shared Cloud
             </button>
           </form>
 
@@ -456,7 +458,7 @@
 
             <button type="submit" id="expenseSubmitBtn" class="w-full bg-rose-700 hover:bg-rose-800 active:scale-[0.99] text-white font-semibold py-3 rounded-xl shadow transition flex items-center justify-center gap-1.5 text-sm">
               <i data-lucide="cloud-upload" class="w-4 h-4"></i>
-              Sync Expense to Cloud
+              Sync to Shared Cloud
             </button>
           </form>
 
@@ -468,7 +470,7 @@
             <h3 class="font-bold text-stone-800 text-sm flex items-center gap-1.5">
               <i data-lucide="bar-chart-2" class="w-4 h-4 text-spore-600"></i> Weekly Breakdown
             </h3>
-            <span class="text-[11px] text-stone-500 font-medium">Cloud auto-sync</span>
+            <span class="text-[11px] text-stone-500 font-medium">Auto-syncs both users</span>
           </div>
           <div id="weeklyBreakdownList" class="space-y-2 max-h-48 overflow-y-auto pr-1 text-xs custom-scrollbar"></div>
         </div>
@@ -477,7 +479,7 @@
           <button onclick="exportToCSV()" class="flex items-center gap-1.5 font-medium hover:text-spore-700 py-1 px-2 rounded-lg hover:bg-stone-100 transition">
             <i data-lucide="download" class="w-3.5 h-3.5"></i> Export CSV
           </button>
-          <span class="text-[11px] text-stone-400">Works offline & online</span>
+          <span class="text-[11px] text-stone-400">Shared multi-device cloud</span>
         </div>
       </div>
 
@@ -488,7 +490,7 @@
           <div class="p-3 sm:p-4 border-b border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-stone-50/50 rounded-t-2xl">
             <div class="flex items-center justify-between sm:justify-start gap-2">
               <h2 class="font-bold text-stone-800 text-sm sm:text-base flex items-center gap-2">
-                <i data-lucide="book-open" class="w-4 h-4 text-spore-600"></i> Ledger Records
+                <i data-lucide="book-open" class="w-4 h-4 text-spore-600"></i> Shared Records
               </h2>
               <span id="recordCountBadge" class="bg-stone-200 text-stone-700 text-xs px-2 py-0.5 rounded-full font-semibold">0</span>
             </div>
@@ -532,7 +534,7 @@
               <i data-lucide="clipboard-list" class="w-8 h-8"></i>
             </div>
             <h4 class="font-bold text-stone-700 text-sm">No records found</h4>
-            <p class="text-xs text-stone-500 max-w-xs mt-0.5">Add a new sale or expense to populate your cloud ledger.</p>
+            <p class="text-xs text-stone-500 max-w-xs mt-0.5">Either email can add entries here and both will see them.</p>
           </div>
 
           <!-- Summary Ledger Footer -->
@@ -551,7 +553,7 @@
     </div>
   </main>
 
-  <!-- Mobile Entry Slide-over / Modal Form -->
+  <!-- Mobile Entry Modal -->
   <div id="mobileFormModal" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
     <div class="bg-white rounded-t-3xl sm:rounded-3xl max-h-[92vh] overflow-y-auto w-full max-w-md p-5 border border-stone-200 relative shadow-2xl custom-scrollbar">
       <div class="flex justify-between items-center pb-3 border-b border-stone-200 mb-3">
@@ -572,7 +574,7 @@
           <i data-lucide="sprout" class="w-8 h-8 stroke-[2.5]"></i>
         </div>
         <h2 id="authTitle" class="text-xl sm:text-2xl font-bold text-stone-900">Sign In to Farm Ledger</h2>
-        <p id="authSubtitle" class="text-xs text-stone-500 mt-1">Access your shared daily accounts on phone & desktop</p>
+        <p id="authSubtitle" class="text-xs text-stone-500 mt-1">Both authorized emails share the exact same farm data</p>
       </div>
 
       <div class="flex bg-stone-100 p-1 rounded-xl mb-4 text-xs font-semibold">
@@ -616,7 +618,7 @@
         </div>
         <div>
           <h3 id="modalTitle" class="font-bold text-stone-900 text-base">Confirm Delete</h3>
-          <p id="modalDesc" class="text-xs text-stone-600 mt-0.5">Are you sure you want to remove this record?</p>
+          <p id="modalDesc" class="text-xs text-stone-600 mt-0.5">Are you sure you want to remove this record for both users?</p>
         </div>
       </div>
       <div class="flex justify-end gap-2 pt-2">
@@ -660,7 +662,6 @@
       lucide.createIcons();
     });
 
-    // Mobile Modal Form Handler
     function openFormModal(type) {
       const modal = document.getElementById('mobileFormModal');
       const slot = document.getElementById('mobileFormSlot');
@@ -698,13 +699,13 @@
 
       if (mode === 'login') {
         title.textContent = "Sign In to Farm Ledger";
-        sub.textContent = "Access your shared daily accounts on phone & desktop";
+        sub.textContent = "Both authorized emails share the exact same farm data";
         btn.querySelector('span').textContent = "Sign In";
         tabLogin.className = "flex-1 py-2 rounded-lg bg-white shadow-sm text-stone-900";
         tabReg.className = "flex-1 py-2 rounded-lg text-stone-500 hover:text-stone-900";
       } else {
-        title.textContent = "Create Cloud Account";
-        sub.textContent = "Start maintaining farm records in cloud storage";
+        title.textContent = "Create Account";
+        sub.textContent = "Create login for farm team member";
         btn.querySelector('span').textContent = "Create Account";
         tabReg.className = "flex-1 py-2 rounded-lg bg-white shadow-sm text-stone-900";
         tabLogin.className = "flex-1 py-2 rounded-lg text-stone-500 hover:text-stone-900";
@@ -726,10 +727,10 @@
       try {
         if (authMode === 'login') {
           await window.fbMethods.signInWithEmailAndPassword(window.fbAuth, email, password);
-          showToast('Welcome back! Cloud sync active.');
+          showToast('Welcome back! Connected to shared ledger.');
         } else {
           await window.fbMethods.createUserWithEmailAndPassword(window.fbAuth, email, password);
-          showToast('Account created! Your ledger is ready.');
+          showToast('Account created! Connected to shared ledger.');
         }
       } catch (err) {
         console.error(err);
@@ -811,11 +812,12 @@
         customer: customer,
         paymentStatus: paymentStatus,
         notes: notes,
+        addedBy: user.email,
         createdAt: new Date().toISOString()
       };
 
       try {
-        const ref = window.fbMethods.collection(window.fbDb, 'users', user.uid, 'records');
+        const ref = window.fbMethods.collection(window.fbDb, 'shared_farm_ledger', 'main_records', 'records');
         await window.fbMethods.addDoc(ref, record);
 
         document.getElementById('saleQty').value = '';
@@ -825,10 +827,10 @@
         calculateSaleTotal();
         closeMobileFormModal();
 
-        showToast(`Saved to Cloud: +${formatMoney(totalAmount)}`);
+        showToast(`Saved to Shared Cloud: +${formatMoney(totalAmount)}`);
       } catch (err) {
         console.error(err);
-        showToast('Failed to save to cloud', 'error');
+        showToast('Failed to save to shared cloud', 'error');
       }
     }
 
@@ -858,11 +860,12 @@
         amount: amount,
         description: description,
         paymentMethod: paymentMethod,
+        addedBy: user.email,
         createdAt: new Date().toISOString()
       };
 
       try {
-        const ref = window.fbMethods.collection(window.fbDb, 'users', user.uid, 'records');
+        const ref = window.fbMethods.collection(window.fbDb, 'shared_farm_ledger', 'main_records', 'records');
         await window.fbMethods.addDoc(ref, record);
 
         document.getElementById('expenseAmount').value = '';
@@ -872,7 +875,7 @@
         showToast(`Expense Saved: -${formatMoney(amount)}`);
       } catch (err) {
         console.error(err);
-        showToast('Failed to save expense to cloud', 'error');
+        showToast('Failed to save expense to shared cloud', 'error');
       }
     }
 
@@ -1104,9 +1107,9 @@
       list.forEach(r => {
         const isSale = r.type === 'SALE';
         const formattedDate = formatDateDisplay(r.date);
+        const addedByShort = r.addedBy ? r.addedBy.split('@')[0] : '';
 
         if (isSale) {
-          // Desktop Row
           tableHtml += `
             <tr class="hover:bg-stone-50/80 transition">
               <td class="py-3 px-3 sm:px-4 font-medium text-stone-800 whitespace-nowrap">${formattedDate}</td>
@@ -1123,6 +1126,7 @@
                 <div class="text-xs text-stone-500 mt-0.5">
                   Buyer: <span class="text-stone-700">${escapeHtml(r.customer || 'Direct')}</span>
                   ${r.notes ? ` · <span class="italic text-stone-400">"${escapeHtml(r.notes)}"</span>` : ''}
+                  ${addedByShort ? ` · <span class="text-amber-700 text-[10px]">by ${escapeHtml(addedByShort)}</span>` : ''}
                 </div>
               </td>
               <td class="py-3 px-2 sm:px-3 text-right whitespace-nowrap text-stone-600 text-xs">
@@ -1140,7 +1144,6 @@
             </tr>
           `;
 
-          // Mobile Card
           mobileHtml += `
             <div class="py-3 px-2 flex items-center justify-between gap-3">
               <div class="flex-1 min-w-0">
@@ -1150,7 +1153,7 @@
                   <span class="text-[10px] text-stone-400">· ${formattedDate}</span>
                 </div>
                 <div class="text-[11px] text-stone-500 mt-1 truncate">
-                  ${r.quantity} ${r.unit} · ${escapeHtml(r.customer || 'Direct')} ${r.notes ? `(${escapeHtml(r.notes)})` : ''}
+                  ${r.quantity} ${r.unit} · ${escapeHtml(r.customer || 'Direct')} ${addedByShort ? `(${escapeHtml(addedByShort)})` : ''}
                 </div>
               </div>
               <div class="text-right shrink-0 flex items-center gap-2">
@@ -1165,7 +1168,6 @@
             </div>
           `;
         } else {
-          // Desktop Row
           tableHtml += `
             <tr class="hover:bg-stone-50/80 transition">
               <td class="py-3 px-3 sm:px-4 font-medium text-stone-800 whitespace-nowrap">${formattedDate}</td>
@@ -1179,7 +1181,10 @@
                   <span>${escapeHtml(r.category)}</span>
                   <span class="text-[10px] bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded">${escapeHtml(r.paymentMethod || 'Paid')}</span>
                 </div>
-                <div class="text-xs text-stone-500 mt-0.5">${escapeHtml(r.description)}</div>
+                <div class="text-xs text-stone-500 mt-0.5">
+                  ${escapeHtml(r.description)}
+                  ${addedByShort ? ` · <span class="text-amber-700 text-[10px]">by ${escapeHtml(addedByShort)}</span>` : ''}
+                </div>
               </td>
               <td class="py-3 px-2 sm:px-3 text-right whitespace-nowrap text-stone-400 text-xs">—</td>
               <td class="py-3 px-3 sm:px-4 text-right font-bold text-rose-700 whitespace-nowrap">
@@ -1193,7 +1198,6 @@
             </tr>
           `;
 
-          // Mobile Card
           mobileHtml += `
             <div class="py-3 px-2 flex items-center justify-between gap-3">
               <div class="flex-1 min-w-0">
@@ -1203,7 +1207,7 @@
                   <span class="text-[10px] text-stone-400">· ${formattedDate}</span>
                 </div>
                 <div class="text-[11px] text-stone-500 mt-1 truncate">
-                  ${escapeHtml(r.description)}
+                  ${escapeHtml(r.description)} ${addedByShort ? `(${escapeHtml(addedByShort)})` : ''}
                 </div>
               </div>
               <div class="text-right shrink-0 flex items-center gap-2">
@@ -1264,13 +1268,13 @@
 
       openModal({
         title: 'Delete Entry?',
-        desc: 'Permanently remove this entry from your cloud ledger.',
+        desc: 'Permanently remove this entry from the shared ledger for all users.',
         confirmColor: 'bg-rose-600 hover:bg-rose-700',
         onConfirm: async () => {
           try {
-            const docRef = window.fbMethods.doc(window.fbDb, 'users', user.uid, 'records', docId);
+            const docRef = window.fbMethods.doc(window.fbDb, 'shared_farm_ledger', 'main_records', 'records', docId);
             await window.fbMethods.deleteDoc(docRef);
-            showToast('Record deleted from cloud');
+            showToast('Record deleted from shared cloud');
           } catch (err) {
             console.error(err);
             showToast('Failed to delete record', 'error');
@@ -1286,20 +1290,22 @@
         return;
       }
 
-      const headers = ['Record ID', 'Date', 'Type', 'Category / Variety', 'Quantity', 'Unit', 'Unit Price', 'Total Amount', 'Customer / Desc', 'Payment Info', 'Notes'];
+      const headers = ['Record ID', 'Date', 'Type', 'Category / Variety', 'Quantity', 'Unit', 'Unit Price', 'Total Amount', 'Customer / Desc', 'Payment Info', 'Added By', 'Notes'];
       const rows = records.map(r => {
         if (r.type === 'SALE') {
           return [
             r.id, r.date, 'SALE', r.cropVariety, r.quantity, r.unit, r.unitPrice, r.amount,
             `"${(r.customer || '').replace(/"/g, '""')}"`,
             `"${(r.paymentStatus || '').replace(/"/g, '""')}"`,
+            `"${(r.addedBy || '').replace(/"/g, '""')}"`,
             `"${(r.notes || '').replace(/"/g, '""')}"`
           ];
         } else {
           return [
             r.id, r.date, 'EXPENSE', r.category, '', '', '', r.amount,
             `"${(r.description || '').replace(/"/g, '""')}"`,
-            `"${(r.paymentMethod || '').replace(/"/g, '""')}"`, ''
+            `"${(r.paymentMethod || '').replace(/"/g, '""')}"`,
+            `"${(r.addedBy || '').replace(/"/g, '""')}"`, ''
           ];
         }
       });
@@ -1308,7 +1314,7 @@
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `farm_ledger_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute("download", `shared_farm_ledger_${new Date().toISOString().split('T')[0]}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
