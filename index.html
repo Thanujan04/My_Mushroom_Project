@@ -183,16 +183,16 @@
       .no-print { display: none !important; }
     }
 
-    .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar { height: 5px; width: 5px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 9999px; }
     
-    /* Touch friendly input adjustments */
+    /* Touch friendly input adjustments - prevents auto-zoom on mobile */
     input, select, button {
-      font-size: 16px !important; /* Prevents iOS auto-zoom on input focus */
+      font-size: 16px !important;
     }
     @media (min-width: 640px) {
       input, select, button {
-        font-size: 0.875rem !important; /* desktop 14px */
+        font-size: 0.875rem !important;
       }
     }
   </style>
@@ -217,7 +217,6 @@
       
       <!-- Right Toolbar -->
       <div class="flex items-center space-x-1.5 sm:space-x-3 shrink-0">
-        <!-- Currency -->
         <div class="flex items-center bg-spore-800/80 rounded-lg px-2 py-1 sm:py-1.5 border border-spore-600">
           <select id="currencySelect" class="bg-transparent text-white text-xs font-semibold focus:outline-none cursor-pointer">
             <option value="Rs" class="text-stone-900">Rs</option>
@@ -227,13 +226,11 @@
           </select>
         </div>
 
-        <!-- Print & Export -->
         <button onclick="openPrintModal()" class="flex items-center gap-1 bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold text-xs px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl transition shadow">
           <i data-lucide="printer" class="w-3.5 h-3.5"></i>
           <span class="hidden sm:inline">Print & Export</span>
         </button>
 
-        <!-- User Profile Nav Badge -->
         <div id="userNavBadge" class="hidden items-center gap-1.5 bg-spore-800/90 border border-spore-600 rounded-lg px-2 py-1 sm:py-1.5">
           <i data-lucide="user" class="w-3.5 h-3.5 text-amber-300"></i>
           <span id="userEmailText" class="text-xs max-w-[70px] sm:max-w-[140px] truncate font-medium text-spore-100 hidden sm:inline">User</span>
@@ -250,7 +247,7 @@
     <!-- Toast Notification -->
     <div id="toastContainer" class="fixed top-14 sm:top-16 right-3 left-3 sm:left-auto sm:right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Filter Bar: Mobile Friendly Horizontal Scroller -->
+    <!-- Filter Bar -->
     <section class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-stone-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
       <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 custom-scrollbar whitespace-nowrap">
         <button onclick="setFilter('all')" id="btn-filter-all" class="filter-btn px-3 py-1.5 text-xs font-semibold rounded-xl border bg-spore-600 text-white border-spore-600 shadow-sm">All</button>
@@ -470,10 +467,12 @@
         </div>
       </div>
 
-      <!-- Right Column: Ledger Log (Mobile Responsive: Card/Table Hybrid) -->
+      <!-- Right Column: Fixed Height with Internal Scroll -->
       <div class="lg:col-span-7 space-y-4">
-        <div class="bg-white rounded-2xl shadow-sm border border-stone-200 flex flex-col min-h-[450px]">
-          <div class="p-3 sm:p-4 border-b border-stone-200 flex flex-col gap-2.5 bg-stone-50/50 rounded-t-2xl">
+        <div class="bg-white rounded-2xl shadow-sm border border-stone-200 flex flex-col h-[520px] sm:h-[600px] overflow-hidden">
+          
+          <!-- Pinned Search & Filter Header -->
+          <div class="p-3 sm:p-4 border-b border-stone-200 flex flex-col gap-2.5 bg-stone-50/50 rounded-t-2xl shrink-0">
             <div class="flex items-center justify-between">
               <h2 class="font-bold text-stone-800 text-xs sm:text-base flex items-center gap-1.5">
                 <i data-lucide="book-open" class="w-4 h-4 text-spore-600"></i> Farm Ledger Records
@@ -495,34 +494,41 @@
             </div>
           </div>
 
-          <!-- Mobile Cards View for Small Screens, Table for Desktop -->
-          <div id="mobileRecordList" class="block sm:hidden divide-y divide-stone-100 p-2 flex-grow overflow-y-auto custom-scrollbar"></div>
+          <!-- Scrollable Records Container -->
+          <div class="flex-1 overflow-y-auto custom-scrollbar relative">
+            
+            <!-- Mobile Cards List -->
+            <div id="mobileRecordList" class="block sm:hidden divide-y divide-stone-100 p-2"></div>
 
-          <div class="hidden sm:block overflow-x-auto flex-grow custom-scrollbar">
-            <table class="w-full text-left text-xs sm:text-sm">
-              <thead class="bg-stone-100/75 text-stone-600 uppercase text-[11px] font-semibold border-b border-stone-200">
-                <tr>
-                  <th class="py-2.5 px-3">Date</th>
-                  <th class="py-2.5 px-2">Type</th>
-                  <th class="py-2.5 px-3">Details</th>
-                  <th class="py-2.5 px-2 text-right">Qty/Rate</th>
-                  <th class="py-2.5 px-3 text-right">Amount</th>
-                  <th class="py-2.5 px-2 text-center no-print">Action</th>
-                </tr>
-              </thead>
-              <tbody id="recordsTableBody" class="divide-y divide-stone-100 text-stone-700"></tbody>
-            </table>
-          </div>
-
-          <div id="emptyState" class="hidden flex flex-col items-center justify-center p-8 text-center">
-            <div class="p-2.5 bg-stone-100 text-stone-400 rounded-2xl mb-2">
-              <i data-lucide="clipboard-list" class="w-7 h-7"></i>
+            <!-- Desktop Table View with Sticky Header -->
+            <div class="hidden sm:block overflow-x-auto">
+              <table class="w-full text-left text-xs sm:text-sm">
+                <thead class="bg-stone-100/90 text-stone-600 uppercase text-[11px] font-semibold border-b border-stone-200 sticky top-0 z-10 backdrop-blur-sm">
+                  <tr>
+                    <th class="py-2.5 px-3">Date</th>
+                    <th class="py-2.5 px-2">Type</th>
+                    <th class="py-2.5 px-3">Details</th>
+                    <th class="py-2.5 px-2 text-right">Qty/Rate</th>
+                    <th class="py-2.5 px-3 text-right">Amount</th>
+                    <th class="py-2.5 px-2 text-center no-print">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="recordsTableBody" class="divide-y divide-stone-100 text-stone-700"></tbody>
+              </table>
             </div>
-            <h4 class="font-bold text-stone-700 text-xs sm:text-sm">No records found</h4>
-            <p class="text-[11px] text-stone-400 mt-0.5">Nothing matches your filter</p>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden flex flex-col items-center justify-center p-8 text-center h-full">
+              <div class="p-2.5 bg-stone-100 text-stone-400 rounded-2xl mb-2">
+                <i data-lucide="clipboard-list" class="w-7 h-7"></i>
+              </div>
+              <h4 class="font-bold text-stone-700 text-xs sm:text-sm">No records found</h4>
+              <p class="text-[11px] text-stone-400 mt-0.5">Nothing matches your filter</p>
+            </div>
           </div>
 
-          <div class="p-3 bg-stone-50 border-t border-stone-200 rounded-b-2xl flex flex-col sm:flex-row justify-between items-center text-xs text-stone-600 gap-1.5">
+          <!-- Pinned Footer Totals -->
+          <div class="p-3 bg-stone-50 border-t border-stone-200 rounded-b-2xl flex flex-col sm:flex-row justify-between items-center text-xs text-stone-600 gap-1.5 shrink-0">
             <span class="font-medium text-[11px]" id="filteredStatsSummary">0 sales, 0 expenses</span>
             <div class="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs">
               <span>In: <b class="text-emerald-700" id="footerTotalIncome">Rs 0</b></span>
